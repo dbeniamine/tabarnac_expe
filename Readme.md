@@ -46,7 +46,10 @@ The experiment trace is organized as follow:
 This experiment aims at measuring Tabarnacs overhead, it has been executed on two machines: [Idfreeze](http://digitalis.inria.fr/index.php/Idfreeze) from [digitalis](http://digitalis.inria.fr/index.php/Idfreeze) and Turing, one of the machines of the [Informatica](http://www.inf.ufrgs.br/) team from the [UFRGS](http://www.ufrgs.br).
 These machines are described in the paper and in the log files.
 
-The full traces are available at Zenodo **TODO**.
+The full traces are available at Zenodo
+<a href="http://dx.doi.org/10.5281/zenodo.61154"><img src="https://zenodo.org/badge/doi/10.5281/zenodo.61154.svg" alt="10.5281/zenodo.61154"></a>.
+
+
 
 The experiment trace is organized as follow:
 
