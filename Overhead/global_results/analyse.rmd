@@ -1,0 +1,58 @@
+Analysis of Tabarnac optimization on IS
+=======================================
+
+
+```{r parsing ,echo=F}
+library(ggplot2)
+library(plyr)
+data<-data.frame(read.csv2(file="results.csv",sep=',',dec='.'))
+data <- subset(data, data$Bench!="DC.B")
+str(data)
+show(data)
+```
+Results
+-------
+
+###   Execution time
+
+```{r ExecTime, echo=F}
+require(grid)
+p  <- ggplot(data,aes(x=Bench,y=Slowdown, fill=Machine))
+p  <-  p + geom_bar(stat="identity", position=position_dodge(.9) )
+p  <-  p + geom_errorbar(aes(ymin=Slowdown-se, ymax=Slowdown+se),
+                  width=.2,                    # Width of the error bars
+                  position=position_dodge(.9))
+p <- p + xlab("Benchmark")
+p <- p + ylab("Slowdown factor")
+p <- p + guides(fill=guide_legend(title="Machine"))
+p <- p + scale_fill_brewer(palette="YlOrRd")
+# BW theme
+p <- p + theme_bw()
+p <-  p + theme(panel.grid.minor = element_line(colour = "black", linetype="dashed", size = 0.1),
+        panel.grid.major = element_line(colour = "black", size = 0.1),
+        legend.position="bottom")
+#p <- p + scale_fill_grey()
+p <- p+ theme(legend.position="bottom")
+show(p)
+ggsave("OverheadPaper.pdf",device=cairo_pdf, scale=.8)
+ggsave("Overhead.pdf")
+```
+
+Detailled Values:
+
+```{r DetailledValues, echo=F}
+show(data)
+```
+
+Conclusions
+-----------
+
+**TODO**
+
+```{r free, echo=F}
+remove(p)
+remove(stat)
+remove(data)
+remove(speedup)
+remove(stat1)
+```

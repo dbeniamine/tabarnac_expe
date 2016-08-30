@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+
+<title>Analysis of Tabarnac optimization on IS</title>
+
+<script type="text/javascript">
+window.onload = function() {
+  var imgs = document.getElementsByTagName('img'), i, img;
+  for (i = 0; i < imgs.length; i++) {
+    img = imgs[i];
+    // center an image if it is the only element of its parent
+    if (img.parentElement.childElementCount === 1)
+      img.parentElement.style.textAlign = 'center';
+  }
+};
+</script>
+
+
+
+
+
+<style type="text/css">
+body, td {
+   font-family: sans-serif;
+   background-color: white;
+   font-size: 13px;
+}
+
+body {
+  max-width: 800px;
+  margin: auto;
+  padding: 1em;
+  line-height: 20px;
+}
+
+tt, code, pre {
+   font-family: 'DejaVu Sans Mono', 'Droid Sans Mono', 'Lucida Console', Consolas, Monaco, monospace;
+}
+
+h1 {
+   font-size:2.2em;
+}
+
+h2 {
+   font-size:1.8em;
+}
+
+h3 {
+   font-size:1.4em;
+}
+
+h4 {
+   font-size:1.0em;
+}
+
+h5 {
+   font-size:0.9em;
+}
+
+h6 {
+   font-size:0.8em;
+}
+
+a:visited {
+   color: rgb(50%, 0%, 50%);
+}
+
+pre, img {
+  max-width: 100%;
+}
+pre {
+  overflow-x: auto;
+}
+pre code {
+   display: block; padding: 0.5em;
+}
+
+code {
+  font-size: 92%;
+  border: 1px solid #ccc;
+}
+
+code[class] {
+  background-color: #F8F8F8;
+}
+
+table, td, th {
+  border: none;
+}
+
+blockquote {
+   color:#666666;
+   margin:0;
+   padding-left: 1em;
+   border-left: 0.5em #EEE solid;
+}
+
+hr {
+   height: 0px;
+   border-bottom: none;
+   border-top-width: thin;
+   border-top-style: dotted;
+   border-top-color: #999999;
+}
+
+@media print {
+   * {
+      background: transparent !important;
+      color: black !important;
+      filter:none !important;
+      -ms-filter: none !important;
+   }
+
+   body {
+      font-size:12pt;
+      max-width:100%;
+   }
+
+   a, a:visited {
+      text-decoration: underline;
+   }
+
+   hr {
+      visibility: hidden;
+      page-break-before: always;
+   }
+
+   pre, blockquote {
+      padding-right: 1em;
+      page-break-inside: avoid;
+   }
+
+   tr, img {
+      page-break-inside: avoid;
+   }
+
+   img {
+      max-width: 100% !important;
+   }
+
+   @page :left {
+      margin: 15mm 20mm 15mm 10mm;
+   }
+
+   @page :right {
+      margin: 15mm 10mm 15mm 20mm;
+   }
+
+   p, h2, h3 {
+      orphans: 3; widows: 3;
+   }
+
+   h2, h3 {
+      page-break-after: avoid;
+   }
+}
+</style>
+
+
+
+</head>
+
+<body>
+<h1>Analysis of Tabarnac optimization on IS</h1>
+
+<pre><code>## Loading required package: methods
+</code></pre>
+
+<p>Experiment executed the 15/03/2015 on turing (UFRGS).</p>
+
+<h2>Setup</h2>
+
+<p>Optimizations:</p>
+
+<ul>
+<li>Dynamic: threads use OpenMP schedule(dynamic), default configuration for IS</li>
+<li>Cyclic:  thread use a static schedule with a step of size 1</li>
+<li>Tabarnac: cyclic configuration taking into account the Gaussian use of key_buff1</li>
+<li>libnuma: tabarnac opti + mapping using libnuma</li>
+</ul>
+
+<p>Execution type:</p>
+
+<ul>
+<li>Affinity: on/ off,    GOMP_CPU_AFFINITY=0-63</li>
+<li>balancing: on/off     kernel.numa_balancing</li>
+<li>interleave: on/off    numactl -i all</li>
+</ul>
+
+<h2>Expectations</h2>
+
+<p>best should be tabrnac aff on blancing off interleave off</p>
+
+<h2>Results</h2>
+
+<h3>Execution time</h3>
+
+<p><img src="data:image/png;base64,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" alt="plot of chunk ExecTime"/> </p>
+
+<p>Detailled Values:</p>
+
+<pre><code>##   Bench     Type  N      mean        sd         se
+## 1  DC.A     Base 10  1.000000 0.0000000 0.00000000
+## 2  DC.A TABARNAC 10 26.261184 0.5695040 0.18009299
+## 3  SP.B     Base 10  1.000000 0.0000000 0.00000000
+## 4  SP.B TABARNAC 10  7.372099 0.1811236 0.05727632
+</code></pre>
+
+<h2>Conclusions</h2>
+
+<p><strong>TODO</strong></p>
+
+<pre><code>## Warning in remove(speedup): object &#39;speedup&#39; not found
+</code></pre>
+
+<pre><code>## Warning in remove(stat1): object &#39;stat1&#39; not found
+</code></pre>
+
+</body>
+
+</html>

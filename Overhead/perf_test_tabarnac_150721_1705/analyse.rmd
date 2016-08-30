@@ -1,0 +1,93 @@
+Analysis of Tabarnac optimization on IS
+=======================================
+
+
+```{r parsing ,echo=F}
+library(ggplot2)
+library(plyr)
+data<-data.frame(read.csv2(file="results.csv",sep=',',dec='.'))
+#str(data)
+#show(data)
+```
+Experiment executed the 15/03/2015 on turing (UFRGS).
+
+Setup
+-----
+
+Optimizations:
+
++ Dynamic: threads use OpenMP schedule(dynamic), default configuration for IS
++ Cyclic:  thread use a static schedule with a step of size 1
++ Tabarnac: cyclic configuration taking into account the Gaussian use of key_buff1
++ libnuma: tabarnac opti + mapping using libnuma
+
+
+Execution type:
+
++ Affinity: on/ off,    GOMP_CPU_AFFINITY=0-63
++ balancing: on/off     kernel.numa_balancing
++ interleave: on/off    numactl -i all
+
+
+
+Expectations
+------------
+
+best should be tabrnac aff on blancing off interleave off
+
+Results
+-------
+
+###   Execution time
+
+```{r ExecTime, echo=F}
+norm_vect <- rep(subset(data, data$Type=="Base")$Time,each=2)
+data$slowdown <- data$Time / norm_vect
+stat<-ddply(data,c("Bench", "Type"),summarise,
+            N=length(slowdown),mean=mean(slowdown),sd=sd(slowdown),se=sd/sqrt(N))
+p  <- ggplot(stat,aes(x=Bench,y=mean, fill=Type))
+#p  <- ggplot(stat,aes(x=Bench,y=speedup, fill=Type))
+p  <-  p + geom_bar(stat="identity", position=position_dodge(.9) )
+p  <-  p + geom_errorbar(aes(ymin=mean-se, ymax=mean+se),
+                  width=.2,                    # Width of the error bars
+                  position=position_dodge(.9))
+#p  <- p + facet_grid(Balancing ~ Interleave)
+p <- p + xlab("Benchmark")
+p <- p + ylab("Slowdown factor")
+p <- p + guides(fill=guide_legend(title="Execution type"))
+# BW theme
+p <- p + theme_bw()
+p <-  p + theme(panel.grid.minor = element_line(colour = "black", linetype="dashed", size = 0.1),
+        panel.grid.major = element_line(colour = "black", size = 0.1),
+        legend.position="bottom")
+p <- p + scale_fill_grey()
+#p <- p+ theme(legend.position="none")
+show(p)
+ggsave("figure/ExecutionTime.pdf", width=4, height=4)
+ggsave("tabarnac_ovh.png", width=4, height=4)
+```
+
+Detailled Values:
+
+```{r DetailledValues, echo=F}
+show(stat)
+stat <- subset(stat,stat$Type=="TABARNAC")
+stat$sd  <-  NULL
+stat$se  <-  NULL
+stat$N  <-  NULL
+stat$Type <- NULL
+write.csv(stat,'slowdown_factor.csv')
+```
+
+Conclusions
+-----------
+
+**TODO**
+
+```{r free, echo=F}
+remove(p)
+remove(stat)
+remove(data)
+remove(speedup)
+remove(stat1)
+```
