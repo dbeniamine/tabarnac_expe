@@ -1,0 +1,99 @@
+Analysis of Tabarnac optimization on IS
+=======================================
+
+
+```{r parsing ,echo=F}
+library(ggplot2)
+library(plyr)
+data<-data.frame(read.csv2(file="results.csv",sep=',',dec='.'))
+#str(data)
+#show(data)
+```
+Experiment executed the 15/03/2015 on turing (UFRGS).
+
+Setup
+-----
+
+**TODO**
+
+
+Expectations
+------------
+
+**TODO**
+
+Results
+-------
+
+###   Execution time
+
+```{r ExecTime, echo=T}
+baseline <- mean(data[data$Conf=="base",]$Time)
+stat<-ddply(data,"Conf",summarise,
+            N=length(Time),mean=mean(Time),sd=sd(Time),se=sd/sqrt(N),
+                speedup=(1-mean/baseline)*100)
+p  <- ggplot(stat,aes(x=Conf,y=mean, fill=Conf))
+p  <-  p + geom_bar(stat="identity", position=position_dodge(.9) )
+p  <-  p + geom_errorbar(aes(ymin=mean-se, ymax=mean+se),
+                  width=.2,                    # Width of the error bars
+                  position=position_dodge(.9))
+p <- p + xlab("Execution type")
+p <- p + ylab("Time (s)")
+p <- p + ggtitle("Execution time of Streamcluster")
+p <- p + guides(fill=guide_legend(title="Configuration"))
+# BW theme
+p <- p + theme_bw()
+p <-  p + theme(panel.grid.minor = element_line(colour = "black", linetype="dashed", size = 0.1),
+        panel.grid.major = element_line(colour = "black", size = 0.1),
+        legend.position="bottom")
+p <- p + scale_fill_grey()
+#p <- p+ theme(legend.position="none")
+show(p)
+ggsave("figure/ExecutionTime.pdf",device=cairo_pdf,  width=10, height=10)
+```
+
+Detailled Values:
+
+```{r DetailledValues, echo=F}
+show(stat)
+```
+
+Paper image
+-----------
+
+```{r SpeedupPaper, echo=F, width=20, height=20}
+ndf <- transform(stat, Conf=ordered(Conf, levels=c('base', 'balancing', 'interleave', 'tabarnac')))
+show(ndf)
+
+p  <- ggplot(ndf,aes(x=Conf,y=speedup, fill=Conf))
+p  <-  p + geom_bar(stat="identity", position=position_dodge(.9) )
+p  <-  p + geom_errorbar(aes(ymin=speedup-se, ymax=speedup+se),
+                  width=.2,                    # Width of the error bars
+                  position=position_dodge(.9))
+p <- p + xlab("Optimization")
+p <- p + ylab("Speedup (%)")
+#p <- p + ggtitle("Speedup of IS.D")
+#p <- p + guides(fill=guide_legend(title="Optimization"))
+# BW theme
+p <- p + theme_bw()
+p <-  p + theme(panel.grid.minor = element_line(colour = "black", linetype="dashed", size = 0.1),
+        panel.grid.major = element_line(colour = "black", size = 0.1),
+        legend.position="bottom")
+p <- p+ theme(legend.position="none")
+p <- p + scale_fill_brewer(palette="YlOrRd")
+#p <- p + scale_fill_grey()
+p <- p+ scale_x_discrete(labels=c("Base","NUMA Balancing","Interleave","First Touch"))
+show(p)
+ggsave("figure/SpeedupPaper.pdf",device=cairo_pdf, scale=.67)
+```
+
+Conclusions
+-----------
+
+**TODO**
+
+```{r free, echo=F}
+remove(p)
+remove(stat)
+remove(data)
+```
