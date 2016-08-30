@@ -17,10 +17,11 @@ The experiment trace is organized as follow:
         parseAndPlot.sh             # Script used to extract the filtered trace
         analysis.rmd                # Script used to do the statistical analysis
         results.csv                 # Filtered results
-        interleave/                 # Raw traces for interleave policy
-        balancing/                  # Raw traces for NUMA balancing
-        base/                       # Raw traces for base
-        tabarnac/                   # Raw traces for modified version
+        affinity-*/                 # Raw traces with/out affinity
+            interleave-*/           # Runs With/out interleave
+                balancing-*/        # Runs With/out NUMA balancing
+
+
 
 ## Ondes3D
 
