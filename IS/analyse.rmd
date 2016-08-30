@@ -1,0 +1,230 @@
+Analysis of Tabarnac optimization on IS
+=======================================
+
+
+```{r parsing ,echo=F}
+library(ggplot2)
+library(plyr)
+data<-data.frame(read.csv2(file="results.csv",sep=',',dec='.'))
+#str(data)
+#show(data)
+```
+Experiment executed the 15/03/2015 on turing (UFRGS).
+
+Setup
+-----
+
+Optimizations:
+
++ Dynamic: threads use OpenMP schedule(dynamic), default configuration for IS
++ Cyclic:  thread use a static schedule with a step of size 1
++ Tabarnac: cyclic configuration taking into account the Gaussian use of key_buff1
++ libnuma: tabarnac opti + mapping using libnuma
+
+
+Execution type:
+
++ Affinity: on/ off,    GOMP_CPU_AFFINITY=0-63
++ balancing: on/off     kernel.numa_balancing
++ interleave: on/off    numactl -i all
+
+
+
+Expectations
+------------
+
+best should be tabrnac with affinty, no blancing, no interleave
+
+
+Results
+-------
+
+Normalize to baseline
+
+###   Execution time
+
+
+```{r Speedup, echo=F, width=20, height=20}
+baseline <- mean(data[data$Affinity=="affinity-off" & data$Balancing=="balancing-off"
+                 & data$Interleave=="interleave-off" & data$Opti=="dynamic",]$Time)
+
+stat<-ddply(data,c("Affinity", "Balancing","Interleave" ,"Opti"),summarise,
+            N=length(Time),mean=mean(Time),sd=sd(Time),se=sd/sqrt(N),
+            speedup=(1-mean/baseline)*100)
+p  <- ggplot(stat,aes(x=Affinity,y=speedup, fill=Opti))
+p  <-  p + geom_bar(stat="identity", position=position_dodge(.9) )
+p  <-  p + geom_errorbar(aes(ymin=speedup-se, ymax=speedup+se),
+                  width=.2,                    # Width of the error bars
+                  position=position_dodge(.9))
+p  <- p + facet_grid(Balancing ~ Interleave)
+p <- p + xlab("Execution type")
+p <- p + ylab("Speedup (%)")
+#p <- p + ggtitle("Execution time of IS.D")
+p <- p + guides(fill=guide_legend(title="Thread scheduling"))
+# BW theme
+p <- p + theme_bw()
+p <-  p + theme(panel.grid.minor = element_line(colour = "black", linetype="dashed", size = 0.1),
+        panel.grid.major = element_line(colour = "black", size = 0.1),
+        legend.position="bottom")
+p <- p + scale_fill_grey()
+#p <- p+ theme(legend.position="none")
+show(p)
+ggsave("figure/Speedup.pdf",device=cairo_pdf, width=10, height=10)
+```
+
+Detailled Values:
+
+```{r DetailledValues, echo=F}
+show(stat)
+```
+
+Conclusions
+-----------
+
++ Balancing and Interleave are always inefficient
++ Affnity can improve both cyclic and tabarnac
++ Without interleave tabarnac is always the best
+
+
+Reduced plot
+------------
+
+```{r SpeedupPaper, echo=F}
+# Tabarnac
+tmp <- stat[stat$Affinity=="affinity-on"& stat$Interleave=="interleave-off" &
+            stat$Balancing=="balancing-off" & stat$Opti=="tabarnac",]
+tmp$Affinity <- NULL
+tmp$Interleave  <-  NULL
+tmp$Runtime <- "OS"
+tmp$Balancing <- NULL
+tmp$Opti <- "Cyclic-Split"
+ndf <- tmp
+# Tabarnac Interleave
+tmp$speedup <- NA
+tmp$se <- NA
+tmp$sd <- NA
+tmp$Affinity <- NULL
+tmp$Interleave  <-  NULL
+tmp$Runtime <- "Interleave"
+tmp$Balancing <- NULL
+tmp$Opti <- "Cyclic-Split"
+ndf <- rbind(ndf,tmp)
+# Tabarnac Balancinf
+tmp$Affinity <- NULL
+tmp$Interleave  <-  NULL
+tmp$Runtime <- "Balancing"
+tmp$Balancing <- NULL
+tmp$Opti <- "Cyclic-Split"
+ndf <- rbind(ndf,tmp)
+
+#tmp$Opti <- "Cyclic-Split"
+#ndf <- rbind(ndf,tmp)
+#tmp$Runtime <- "Balancing"
+#tmp$speedup <- NA
+#tmp$se <- NA
+#tmp$sd <- NA
+#tmp$Opti <- "Cyclic-Split"
+#ndf <- rbind(ndf,tmp)
+
+# Base
+tmp <- stat[stat$Affinity=="affinity-off"& stat$Interleave=="interleave-off" &
+            stat$Balancing=="balancing-off" & stat$Opti=="dynamic",]
+tmp$Affinity <- NULL
+tmp$Interleave  <-  NULL
+#tmp$Runtime <- NULL
+tmp$Runtime <- "OS"
+tmp$Balancing <- NULL
+tmp$Opti <- "Dynamic"
+#tmp$Opti <- c("Dynamic")
+ndf <- rbind(ndf,tmp)
+# Base + Interleave
+tmp <- stat[stat$Affinity=="affinity-off"& stat$Interleave=="interleave-on" &
+            stat$Balancing=="balancing-off" & stat$Opti=="dynamic",]
+tmp$Affinity <- NULL
+tmp$Interleave  <-  NULL
+tmp$Runtime <- "Interleave"
+tmp$Balancing <- NULL
+tmp$Opti <- "Dynamic"
+ndf <- rbind(ndf,tmp)
+
+# Base + Interleave
+tmp <- stat[stat$Affinity=="affinity-off"& stat$Interleave=="interleave-off" &
+            stat$Balancing=="balancing-on" & stat$Opti=="dynamic",]
+tmp$Affinity <- NULL
+tmp$Interleave  <-  NULL
+tmp$Runtime <- "Balancing"
+tmp$Balancing <- NULL
+tmp$Opti <- "Dynamic"
+ndf <- rbind(ndf,tmp)
+
+# Cyclic
+tmp <- stat[stat$Affinity=="affinity-off"& stat$Interleave=="interleave-off" &
+            stat$Balancing=="balancing-off" & stat$Opti=="cyclic",]
+tmp$Affinity <- NULL
+tmp$Interleave  <-  NULL
+tmp$Balancing <- NULL
+tmp$Runtime <- "OS"
+tmp$Opti <- "Cyclic"
+ndf <- rbind(ndf,tmp)
+# Cyclic + Interleave
+tmp <- stat[stat$Affinity=="affinity-off"& stat$Interleave=="interleave-on" &
+            stat$Balancing=="balancing-off" & stat$Opti=="cyclic",]
+tmp$Affinity <- NULL
+tmp$Interleave  <-  NULL
+tmp$Runtime <- "Interleave"
+tmp$Balancing <- NULL
+#tmp$Opti <- c("Cyclic+Interleave")
+tmp$Opti <- "Cyclic"
+ndf <- rbind(ndf,tmp)
+
+# Cyclic + Interleave
+tmp <- stat[stat$Affinity=="affinity-off"& stat$Interleave=="interleave-off" &
+            stat$Balancing=="balancing-on" & stat$Opti=="cyclic",]
+tmp$Affinity <- NULL
+tmp$Interleave  <-  NULL
+#tmp$Runtime <- NULL
+tmp$Balancing <- NULL
+tmp$Runtime <- "Balancing"
+tmp$Opti <- "Cyclic"
+ndf <- rbind(ndf,tmp)
+
+#show(ndf)
+
+require(grid)
+ndf <- transform(ndf, Runtime=ordered(Runtime, levels=c('OS',  'Balancing', 'Interleave')),
+                 Opti=ordered(Opti, levels=c('Dynamic', 'Cyclic','Cyclic-Split')))
+
+p  <- ggplot(ndf,aes(x=Runtime,y=speedup, fill=Opti))
+p  <-  p + geom_bar(stat="identity",
+                    position="dodge")
+p  <-  p + geom_errorbar(aes(ymin=speedup-se, ymax=speedup+se),
+                  width=.3,                    # Width of the error bars
+                  position=position_dodge(.9))
+#p <- p + coord_equal(0.1)
+p <- p + xlab("Optimization")
+p <- p + ylab("Speedup (%)")
+p <- p + guides(fill=guide_legend(title="Thread\nscheduling"))
+# BW theme
+p <- p + theme_bw()
+p <- p + scale_fill_discrete(labels=c("Default", "Cyclic", "Cyclic-Split"))
+p <-  p + theme(panel.grid.minor = element_line(colour = "black", linetype="dashed", size = 0.1),
+        panel.grid.major = element_line(colour = "black", size = 0.1),
+        legend.position="bottom")
+p <- p + scale_x_discrete(labels=c("Base", "NUMA Balancing", "Interleave"))
+p <- p + scale_fill_brewer(palette="YlOrRd")
+#p <-  p + scale_fill_grey()
+#p <- p+ theme(legend.position="none")
+show(p)
+ggsave("figure/SpeedupPaper.pdf",device=cairo_pdf,scale=.8)
+p <- p + ggtitle("Speedup of IS.D compared to the original version")
+ggsave("figure/SpeedupPaper.png")
+```
+
+
+
+```{r free, echo=F}
+remove(p)
+remove(stat)
+remove(data)
+remove(ndf)
+```
